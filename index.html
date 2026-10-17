@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="widthсdevice-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="description" content="ЭХО — текстовая история на полярной станции «Полюс-1». 6 концовок.">
 <title>ЭХО — сигнал с Полюса</title>
 <style>
@@ -668,8 +668,12 @@ var AUDIO = {
 
 /* ============================================================
    VOICE — озвучка через системный синтез речи.
-   Мужской и женский голос; во время речи музыка приглушается.
+   Голос подбирается АВТОМАТИЧЕСКИ по полу говорящего персонажа:
+   девушка в игре — женская озвучка, мужчина — мужская.
+   Для нейтральных реплик (рассказчик) — голос из настроек.
+   Во время речи музыка приглушается.
    ============================================================ */
+var SPK_GENDER={ sok:'m', gae:'m', vet:'f', kra:'f', echo:'f' };
 var VOICE = {
   ok:('speechSynthesis' in window),
   /* gender: 'm' | 'f'. Подбираем системный голос по имени;
@@ -699,7 +703,7 @@ var VOICE = {
     }
     return null;
   },
-  speak:function(text){
+  speak:function(text, gender){
     if(!this.ok || !S.voice || !text) return;
     try{
       speechSynthesis.cancel();
@@ -707,7 +711,7 @@ var VOICE = {
       u.lang = S.lang==='ru' ? 'ru-RU' : 'en-US';
       u.rate = S.rate;
       u.volume = 1.0; /* голос на максимум — музыка приглушается */
-      var g=(S.vgender==='m')?'m':'f';
+      var g=(gender==='m'||gender==='f')?gender:(S.vgender==='m')?'m':'f';
       var v=this.pick(g);
       if(v){ u.voice=v; u.pitch=(g==='m')?0.9:1.05; }
       else { u.pitch=(g==='m')?0.6:1.3; }
@@ -1153,7 +1157,7 @@ function showLine(idx, instant){
   dl.className = h.who==='echo' ? 'echo' : '';
   $('next-hint').style.display='none';
   clearChoices();
-  VOICE.speak(h.txt);
+  VOICE.speak(h.txt, SPK_GENDER[h.who]);
   if(h.who==='echo') AUDIO.whisper();
   if(h.who==='narr' && idx===0 && n.ending) AUDIO.staticBurst(0.12);
 
@@ -1434,8 +1438,9 @@ function bindUI(){
   $('btn-yes').onclick=function(){ AUDIO.click(); doNew(); };
   $('btn-no').onclick=function(){ AUDIO.click(); closeOv('overlay-confirm'); };
 
-  /* закрыть настройки — если включён полноэкранный, он тоже выключается */
-  var closeSet=function(){ AUDIO.click(); closeOv('overlay-settings'); if(FS.active()) FS.exit(); };
+  /* закрыть настройки — полноэкранный режим НЕ выключается:
+     выход из фуллскрина только через крестик ✕ на плашке сверху */
+  var closeSet=function(){ AUDIO.click(); closeOv('overlay-settings'); };
   $('btn-set-close').onclick=closeSet;
   $('ov-x-settings').onclick=closeSet;
   $('fs-exit').onclick=function(e){ e.stopPropagation(); AUDIO.click(); FS.exit(); };
