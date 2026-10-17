@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="description" content="ЭХО — текстовая история на полярной станции «Полюс-1». 6 концовок.">
+<title>ЭХО — сигнал с Полюса</title>
+<style>
+:root{
+  --bg:#04070d; --panel:#0a1424; --line:rgba(127,215,255,.28);
+  --acc:#7fd7ff; --acc2:#b6f0ff; --dim:#8fa6bd; --txt:#d7e6f5; --txt2:#b9cde2;
+  --warm:#ffb454; --bad:#ff5d5d; --good:#7dffa8; --rare:#c39bff; --true:#ffd166; --silent:#7fe3d2;
+  --mono:'Consolas','Courier New','Menlo',monospace;
+  --ui:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:var(--ui);overflow:hidden;user-select:none}
+#snow{position:fixed;inset:0;z-index:1;pointer-events:none}
+#scanlines{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+#vignette{position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+body.no-fx #scanlines,body.no-fx #vignette{display:none}
+
+.screen{display:none;position:fixed;inset:0;z-index:3}
+.screen.active{display:block}
+#screen-menu.active,#screen-ending.active{display:flex;align-items:center;justify-content:center}
+
+/* ---------- MENU ---------- */
+#screen-menu{background:
+  radial-gradient(1200px 600px at 50% 115%,rgba(127,215,255,.10),transparent 60%),
+  radial-gradient(900px 500px at 85% -10%,rgba(195,155,255,.07),transparent 60%),
+  linear-gradient(180deg,#050a14 0%,#04070d 60%,#060c16 100%)}
+.menu-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px;z-index:4}
+.menu-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.42em;color:var(--dim);text-transform:uppercase}
+#menu-title{position:relative;font-family:var(--mono);font-weight:700;
+  font-size:clamp(64px,17vw,150px);letter-spacing:.16em;line-height:1;margin:18px 0 6px;
+  color:#eef9ff;text-shadow:0 0 30px rgba(127,215,255,.35)}
+#menu-title::before,#menu-title::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden}
+#menu-title::before{color:var(--acc);z-index:-1;animation:gl-a 3.2s infinite steps(1)}
+#menu-title::after{color:#ff6f9c;z-index:-2;animation:gl-b 2.7s infinite steps(1)}
+@keyframes gl-a{0%,92%{transform:none;opacity:.0}93%{transform:translate(-3px,1px);opacity:.8}95%{transform:translate(2px,-1px);opacity:.6}97%{transform:none;opacity:0}100%{opacity:0}}
+@keyframes gl-b{0%,89%{transform:none;opacity:0}90%{transform:translate(3px,-2px);opacity:.7}93%{transform:translate(-2px,1px);opacity:.5}96%{opacity:0}100%{opacity:0}}
+.menu-sub{font-family:var(--mono);font-size:13px;letter-spacing:.34em;color:var(--acc);text-transform:uppercase}
+.menu-nav{display:flex;flex-direction:column;gap:13px;margin-top:38px;width:min(380px,82vw)}
+.mbtn{font-family:var(--mono);font-size:14px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--txt);background:rgba(10,20,36,.55);border:1px solid var(--line);
+  padding:14px 18px;cursor:pointer;transition:all .18s ease;text-align:center}
+.mbtn:hover{background:rgba(127,215,255,.10);border-color:var(--acc);color:#fff;
+  box-shadow:0 0 18px rgba(127,215,255,.22),inset 0 0 12px rgba(127,215,255,.06)}
+.mbtn:active{transform:scale(.985)}
+.mbtn.small{padding:10px 14px;font-size:12px}
+.menu-foot{margin-top:42px;display:flex;gap:22px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.14em;color:var(--dim);flex-wrap:wrap;justify-content:center}
+
+/* ---------- OVERLAYS ---------- */
+.overlay{display:none;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;
+  background:rgba(2,6,12,.8);backdrop-filter:blur(4px)}
+.overlay.active{display:flex}
+.panel{position:relative;width:min(560px,93vw);max-height:88vh;overflow:auto;background:rgba(10,20,36,.96);
+  border:1px solid var(--line);padding:26px 28px 24px;box-shadow:0 0 60px rgba(0,0,0,.6)}
+.panel.wide{width:min(780px,95vw)}
+.panel h3{font-family:var(--mono);font-weight:600;font-size:16px;letter-spacing:.3em;
+  color:var(--acc);margin:0 0 20px;text-transform:uppercase}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:15px 0;font-size:13px;letter-spacing:.05em}
+.row select{background:#0c1830;color:var(--txt);border:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;padding:6px 10px;letter-spacing:.08em;outline:none}
+.row input[type=range]{width:min(220px,52vw);accent-color:var(--acc);cursor:pointer}
+.row input[type=checkbox]{width:18px;height:18px;accent-color:var(--acc);cursor:pointer}
+.note{font-size:11px;color:var(--dim);line-height:1.6;margin:4px 0 14px;font-family:var(--mono)}
+.row-btns{display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+#confirm-text{font-size:14px;line-height:1.7;color:var(--txt2)}
+.ov-x{position:absolute;top:12px;right:12px;width:34px;height:34px;font-family:var(--mono);font-size:15px;
+  color:var(--dim);background:rgba(10,20,36,.5);border:1px solid var(--line);cursor:pointer;transition:all .15s;line-height:1}
+.ov-x:hover{color:#fff;border-color:var(--bad);background:rgba(255,93,93,.12)}
+#fs-exit{display:none;position:fixed;top:14px;right:14px;z-index:200;width:44px;height:44px;
+  font-family:var(--mono);font-size:17px;color:var(--txt);background:rgba(10,20,36,.85);
+  border:1px solid var(--line);cursor:pointer;transition:all .15s;line-height:1}
+#fs-exit.show{display:block}
+#fs-exit:hover{border-color:var(--acc);color:#fff;box-shadow:0 0 14px rgba(127,215,255,.3)}
+#btn-fs[disabled]{opacity:.45;cursor:default}
+#btn-fs[disabled]:hover{background:rgba(10,20,36,.55);border-color:var(--line);color:var(--txt);box-shadow:none}
+
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-thumb{background:rgba(127,215,255,.25)}
+::-webkit-scrollbar-track{background:transparent}
+/* ---------- GAME SCREEN ---------- */
+#screen-game{background:
+  radial-gradient(1000px 500px at 50% 110%,rgba(127,215,255,.07),transparent 60%),
+  linear-gradient(180deg,#050a14,#04070d)}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;gap:20px;align-items:center;
+  padding:14px 20px;z-index:6;background:linear-gradient(180deg,rgba(4,7,13,.9),rgba(4,7,13,0))}
+.stat{display:flex;flex-direction:column;gap:5px;width:118px}
+.stat-name{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
+.bar{height:6px;background:rgba(127,215,255,.10);border:1px solid rgba(127,215,255,.22)}
+.bar i{display:block;height:100%;width:50%;transition:width .5s ease}
+#bar-trust{background:var(--acc)} #bar-sanity{background:var(--rare)} #bar-power{background:var(--warm)}
+#hud-know{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--txt);border:1px solid var(--line);padding:7px 12px;background:rgba(10,20,36,.5);cursor:help}
+#btn-pause{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--txt);
+  background:rgba(10,20,36,.5);border:1px solid var(--line);padding:8px 14px;cursor:pointer;transition:all .15s}
+#btn-pause:hover{border-color:var(--acc);color:#fff}
+
+#chapter-card{position:absolute;inset:0;z-index:20;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;background:rgba(4,7,13,.86);
+  opacity:0;transition:opacity .7s ease;text-align:center;padding:20px}
+#chapter-card.show{display:flex;opacity:1}
+#ch-num{font-family:var(--mono);font-size:12px;letter-spacing:.5em;color:var(--dim)}
+#ch-name{font-family:var(--mono);font-size:clamp(30px,7vw,52px);letter-spacing:.3em;color:#eef9ff;
+  text-shadow:0 0 26px rgba(127,215,255,.35);text-transform:uppercase}
+
+#stage{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;
+  align-items:center;padding:86px 16px 26px}
+#dialog{width:min(880px,97vw);min-height:148px;background:rgba(8,16,30,.93);
+  border:1px solid var(--line);border-left:3px solid var(--acc);
+  padding:20px 26px 26px;cursor:pointer;position:relative;transition:border-color .3s}
+#dialog.echo{border-left-color:#ff6f9c;box-shadow:0 0 30px rgba(255,111,156,.12)}
+#speaker{font-family:var(--mono);font-size:12px;letter-spacing:.28em;color:var(--acc);
+  margin-bottom:10px;min-height:15px;text-transform:uppercase}
+#speaker.who-echo{color:#ff8fb1}
+#text{font-family:var(--mono);font-size:16px;line-height:1.8;color:var(--txt);
+  white-space:pre-wrap;min-height:58px;word-wrap:break-word}
+#text.echo-line{color:#c9f4ff;text-shadow:1.2px 0 rgba(255,80,120,.55),-1.2px 0 rgba(80,255,220,.55)}
+#next-hint{position:absolute;right:18px;bottom:10px;color:var(--acc);opacity:.65;
+  font-size:12px;animation:blink 1.2s infinite;display:none}
+@keyframes blink{0%,100%{opacity:.15}50%{opacity:.75}}
+
+#choices{width:min(880px,97vw);display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.choice{font-family:var(--mono);font-size:13px;line-height:1.5;text-align:left;
+  color:var(--txt);background:rgba(10,20,36,.72);border:1px solid var(--line);
+  padding:13px 18px;cursor:pointer;transition:all .15s ease;letter-spacing:.03em}
+.choice:hover{background:rgba(127,215,255,.10);border-color:var(--acc);color:#fff;
+  transform:translateX(4px)}
+.choice .key{color:var(--acc);margin-right:12px;opacity:.85}
+.choice.secret{border-color:rgba(195,155,255,.5)}
+.choice.secret:hover{border-color:var(--rare);background:rgba(195,155,255,.08)}
+
+body.shake #stage{animation:shake .45s ease}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-6px,2px)}40%{transform:translate(5px,-3px)}
+  60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,2px)}}
+
+/* ---------- ENDING SCREEN ---------- */
+#screen-ending{background:
+  radial-gradient(1000px 560px at 50% 110%,rgba(127,215,255,.08),transparent 60%),#04070d}
+.end-card{width:min(640px,94vw);max-height:92vh;overflow:auto;background:rgba(8,16,30,.95);
+  border:1px solid var(--line);padding:40px 38px 32px;text-align:center;
+  animation:fadein .8s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+#end-badge{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.32em;
+  padding:8px 16px;border:1px solid;margin-bottom:20px;text-transform:uppercase}
+.t-bad{color:var(--bad);border-color:var(--bad);background:rgba(255,93,93,.07)}
+.t-normal{color:#9db8d2;border-color:#9db8d2;background:rgba(157,184,210,.06)}
+.t-good{color:var(--good);border-color:var(--good);background:rgba(125,255,168,.06)}
+.t-rare{color:var(--rare);border-color:var(--rare);background:rgba(195,155,255,.07)}
+.t-true{color:var(--true);border-color:var(--true);background:rgba(255,209,102,.07)}
+.t-silent{color:var(--silent);border-color:var(--silent);background:rgba(127,227,210,.06)}
+#end-label{font-family:var(--mono);font-size:11px;letter-spacing:.4em;color:var(--dim)}
+#end-name{font-family:var(--mono);font-size:clamp(28px,8vw,44px);letter-spacing:.24em;
+  color:#eef9ff;margin:10px 0 20px;text-shadow:0 0 22px rgba(127,215,255,.3)}
+#end-desc{font-family:var(--mono);font-size:14px;line-height:1.9;color:var(--txt2);text-align:left}
+#end-progress{margin:24px 0 22px;font-family:var(--mono);font-size:12px;letter-spacing:.24em;color:var(--dim)}
+.end-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ---------- GALLERY / DEVS ---------- */
+#gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px;margin-bottom:20px}
+.gcard{border:1px solid rgba(127,215,255,.25);padding:16px;min-height:132px;
+  background:rgba(10,20,36,.6);display:flex;flex-direction:column}
+.gcard.locked{opacity:.45;border-style:dashed}
+.gcard .gt{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--acc);margin-bottom:9px}
+.gcard .gd{font-family:var(--mono);font-size:11.5px;line-height:1.65;color:var(--txt2);flex:1}
+
+@media (max-width:640px){
+  .stat{width:64px}
+  #hud{gap:10px;padding:10px 12px}
+  #hud-know{padding:6px 8px;font-size:10px}
+  #text{font-size:14.5px;line-height:1.7}
+  .choice{font-size:12px;padding:12px 14px}
+  #dialog{padding:16px 16px 22px}
+  .menu-nav{gap:10px}
+  .mbtn{font-size:12.5px;letter-spacing:.16em}
+}
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<button id="fs-exit" title="Выйти из полноэкранного режима">✕</button>
+
+<!-- ================= MENU ================= -->
+<section id="screen-menu" class="screen active">
+  <div class="menu-wrap">
+    <div class="menu-eyebrow" data-i="eyebrow">полярная станция «ПОЛЮС-1» · 89° ю.ш.</div>
+    <h1 id="menu-title" data-text="ЭХО">ЭХО</h1>
+    <div class="menu-sub" data-i="sub">сигнал с Полюса</div>
+    <nav class="menu-nav">
+      <button class="mbtn" id="btn-continue" data-i="cont" hidden>ПРОДОЛЖИТЬ</button>
+      <button class="mbtn" id="btn-new" data-i="new">НОВАЯ ИГРА</button>
+      <button class="mbtn" id="btn-endings" data-i="endings">КОНЦОВКИ</button>
+      <button class="mbtn" id="btn-settings" data-i="settings">НАСТРОЙКИ</button>
+    </nav>
+    <div class="menu-foot">
+      <span id="menu-ver"></span>
+      <span id="menu-endcount"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="screen-game" class="screen">
+  <header id="hud">
+    <div class="stat"><span class="stat-name" data-i="h_trust">ДОВЕРИЕ</span><div class="bar"><i id="bar-trust"></i></div></div>
+    <div class="stat"><span class="stat-name" data-i="h_sanity">РАССУДОК</span><div class="bar"><i id="bar-sanity"></i></div></div>
+    <div class="stat"><span class="stat-name" data-i="h_power">ЭНЕРГИЯ</span><div class="bar"><i id="bar-power"></i></div></div>
+    <div id="hud-know">0/6</div>
+    <button id="btn-pause" data-i="pause">МЕНЮ</button>
+  </header>
+  <div id="chapter-card"><div id="ch-num"></div><div id="ch-name"></div></div>
+  <main id="stage">
+    <div id="dialog">
+      <div id="speaker"></div>
+      <div id="text"></div>
+      <div id="next-hint">&#9660;</div>
+    </div>
+    <div id="choices"></div>
+  </main>
+</section>
+
+<!-- ================= ENDING ================= -->
+<section id="screen-ending" class="screen">
+  <div class="end-card">
+    <div id="end-badge" class="t-normal"></div>
+    <div id="end-label"></div>
+    <h2 id="end-name"></h2>
+    <p id="end-desc"></p>
+    <div id="end-progress"></div>
+    <div class="end-btns">
+      <button class="mbtn small" id="btn-end-menu" data-i="toMenu">В МЕНЮ</button>
+      <button class="mbtn small" id="btn-end-again" data-i="again">ИГРАТЬ СНОВА</button>
+      <button class="mbtn small" id="btn-end-gallery" data-i="endings">КОНЦОВКИ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OVERLAYS ================= -->
+<div id="overlay-settings" class="overlay">
+  <div class="panel">
+    <button class="ov-x" id="ov-x-settings" title="Закрыть">✕</button>
+    <h3 data-i="settings">НАСТРОЙКИ</h3>
+    <label class="row"><span data-i="s_lang">ЯЗЫК / LANGUAGE</span>
+      <select id="set-lang"><option value="ru">Русский</option><option value="en">English</option></select></label>
+    <label class="row"><span data-i="s_master">ОБЩАЯ ГРОМКОСТЬ</span>
+      <input type="range" id="set-master" min="0" max="100" step="5"></label>
+    <label class="row"><span data-i="s_music">МУЗЫКА</span>
+      <input type="range" id="set-music" min="0" max="100" step="5"></label>
+    <label class="row"><span data-i="s_sfx">ЗВУКИ</span>
+      <input type="range" id="set-sfx" min="0" max="100" step="5"></label>
+    <label class="row"><span data-i="s_voice">ОЗВУЧКА ТЕКСТА</span>
+      <input type="checkbox" id="set-voice"></label>
+    <label class="row"><span data-i="s_vgender">ГОЛОС ОЗВУЧКИ</span>
+      <select id="set-vgender"><option value="f"></option><option value="m"></option></select></label>
+    <label class="row"><span data-i="s_rate">ТЕМП ГОЛОСА</span>
+      <input type="range" id="set-rate" min="70" max="140" step="5"></label>
+    <div class="note" data-i="s_voice_note"></div>
+    <label class="row"><span data-i="s_tspeed">СКОРОСТЬ ТЕКСТА</span>
+      <select id="set-speed">
+        <option value="slow"></option><option value="normal"></option>
+        <option value="fast"></option><option value="instant"></option>
+      </select></label>
+    <label class="row"><span data-i="s_fx">ЭФФЕКТЫ ЭКРАНА</span>
+      <input type="checkbox" id="set-fx"></label>
+    <label class="row" id="row-fs"><span data-i="s_fs">ПОЛНОЭКРАННЫЙ РЕЖИМ</span>
+      <button class="mbtn small" id="btn-fs" data-i="s_fs_do">ВКЛЮЧИТЬ</button></label>
+    <div class="note" data-i="s_fs_note"></div>
+    <div class="row-btns">
+      <button class="mbtn small" id="btn-set-reset" data-i="s_reset">СБРОСИТЬ</button>
+      <button class="mbtn small" id="btn-set-close" data-i="back">НАЗАД</button>
+    </div>
+  </div>
+</div>
+
+<div id="overlay-endings" class="overlay">
+  <div class="panel wide">
+    <h3 data-i="endings">КОНЦОВКИ</h3>
+    <div id="gallery"></div>
+    <button class="mbtn small" id="btn-gal-close" data-i="back">НАЗАД</button>
+  </div>
+</div>
+
+<div id="overlay-pause" class="overlay">
+  <div class="panel">
+    <h3 data-i="pause">ПАУЗА</h3>
+    <button class="mbtn" id="btn-resume" data-i="resume">ПРОДОЛЖИТЬ</button>
+    <button class="mbtn" id="btn-pause-settings" data-i="settings">НАСТРОЙКИ</button>
+    <button class="mbtn" id="btn-pause-exit" data-i="toMenu">В МЕНЮ</button>
+  </div>
+</div>
+
+<div id="overlay-confirm" class="overlay">
+  <div class="panel">
+    <p id="confirm-text"></p>
+    <div class="row-btns">
+      <button class="mbtn small" id="btn-yes" data-i="yes">ДА</button>
+      <button class="mbtn small" id="btn-no" data-i="no">НЕТ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   ЭХО · v0.9.1-beta · ранний доступ
+   Один файл: вся графика, звук и озвучка генерируются в браузере.
+   Выпуск на VK Play: упакуйте index.html в ZIP (файл в корне)
+   и загрузите как HTML5-игру.
+   ============================================================ */
+
+var CONFIG = { ver:'v0.9.1-beta', stage:'early build' };
+
+/* ---------- localStorage (безопасно для песочниц) ---------- */
+var store = {
+  get:function(k,d){ try{ var v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set:function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del:function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* ---------- настройки ---------- */
+var DEFAULTS = { lang:'ru', master:1.0, music:0.55, sfx:0.95, voice:true, vgender:'f', rate:1.0, speed:'normal', fx:true };
+var S = Object.assign({}, DEFAULTS, store.get('echo_settings', {}) || {});
+function saveS(){ store.set('echo_settings', S); }
+
+/* ---------- улики (знание) ---------- */
+var CLUES = {
+  c1:{ru:'запись на ленту',   en:'tape recording'},
+  c2:{ru:'морзянка-тест',     en:'morse test'},
+  c3:{ru:'архив 1963 года',   en:'the 1963 archive'},
+  c4:{ru:'сдвиг задержки',    en:'the shifting delay'},
+  c5:{ru:'опережение ответа', en:'the pre-emptive reply'},
+  c6:{ru:'гул под льдом',     en:'the hum under the ice'}
+};
+
+/* ---------- концовки ---------- */
+var END_ORDER = ['static','normal','good','voice','archive','silence'];
+var ENDS = {
+  static:{
+    t:'bad', ru:'СТАТИКА', en:'STATIC',
+    dru:'Сигнал оборвался. Официальный отчёт: отказ техники, переохлаждение, ошибка экипажа. Но на частоте 7430 кГц ещё долго кто-то повторял ваши позывные — слово в слово, ошибка в ошибку.',
+    den:'The signal cut out. The official report: equipment failure, hypothermia, crew error. But on 7430 kHz someone kept repeating your callsign for a long time — word for word, mistake for mistake.',
+    hru:'Потеряйте рассудок до нуля — или вскройте резонансный колодец силой.',
+    hen:'Let your sanity drop to zero — or pry the resonance well open.'
+  },
+  normal:{
+    t:'normal', ru:'ЭВАКУАЦИЯ', en:'EVACUATION',
+    dru:'Вы улетели в девять сорок. Станцию законсервировали, частоту поставили на контроль. Эхо осталось под льдом — и, кажется, не возражало.',
+    den:'You took off at nine forty. The station was mothballed and the frequency put under watch. The echo stayed under the ice — and did not seem to mind.',
+    hru:'Улетите на эвакуации, так и не узнав правды.',
+    hen:'Fly out with the evacuation without learning the truth.'
+  },
+  good:{
+    t:'good', ru:'РАССВЕТ', en:'DAWN',
+    dru:'Вы остались до рассвета — всем составом. Станция выстояла, а «Полюс-1» стал первым пунктом на планете, который официально состоит в переписке с собственным эхом.',
+    den:'You stayed until dawn — the whole crew. The station survived, and POLE-1 became the first outpost on the planet officially in correspondence with its own echo.',
+    hru:'Заработайте доверие команды (3+) и останьтесь до конца смены.',
+    hen:'Earn the crew\u2019s trust (3+) and stay until the end of the shift.'
+  },
+  voice:{
+    t:'rare', ru:'СОБЕСЕДНИК', en:'THE INTERLOCUTOR',
+    dru:'Ты согласился. Теперь ты — голос под льдом. Экипаж улетел, станция жива, а через год новый радист услышит в эфире СВОЙ голос — с ошибками, слово в слово.',
+    den:'You agreed. Now you are the voice under the ice. The crew flew home, the station lives on — and in a year a new operator will hear THEIR OWN voice on the air — mistakes included, word for word.',
+    hru:'Ответьте Эху с самого начала и примите его предложение в Камере.',
+    hen:'Answer the Echo from the very start and accept its offer in the Chamber.'
+  },
+  archive:{
+    t:'true', ru:'АРХИВ', en:'THE ARCHIVE',
+    dru:'Журнал 1963 года всё объяснил: петля. Эхо отвечает раньше вопроса, потому что оно уже слышало ответ. Вы переписали правила связи с Полюсом — и Камера наконец заснула.',
+    den:'The 1963 log explained everything: the loop. The echo answers before the question because it has already heard the reply. You rewrote the rules of talking to the Pole — and the Chamber finally fell asleep.',
+    hru:'Соберите 4+ улики и прочитайте архив 1963 года в Камере до конца.',
+    hen:'Collect 4+ clues and read the 1963 archive in the Chamber to the end.'
+  },
+  silence:{
+    t:'silent', ru:'ТИШИНА', en:'THE SILENCE',
+    dru:'Передатчик мёртв. Впервые за полгода — чистый эфир. Никто не отвечает раньше вопроса, потому что вопросов больше нет. Тебе снятся беззвучные сны, и только снег помнит частоту 7430.',
+    den:'The transmitter is dead. For the first time in half a year the airwaves are clean. No one answers before the question, because there are no questions left. You dream soundless dreams, and only the snow remembers 7430.',
+    hru:'Введите радиомолчание или разрушьте передатчик в Камере.',
+    hen:'Impose radio silence or destroy the transmitter in the Chamber.'
+  }
+};
+
+/* ---------- строки интерфейса ---------- */
+var STR = {
+ru:{
+  title:'ЭХО', sub:'сигнал с Полюса',
+  eyebrow:'полярная станция «ПОЛЮС-1» · 89° ю.ш.',
+  new:'НОВАЯ ИГРА', cont:'ПРОДОЛЖИТЬ', endings:'КОНЦОВКИ', settings:'НАСТРОЙКИ',
+  pause:'МЕНЮ', resume:'ПРОДОЛЖИТЬ', toMenu:'В МЕНЮ', again:'ИГРАТЬ СНОВА', back:'НАЗАД', yes:'ДА', no:'НЕТ',
+  h_trust:'ДОВЕРИЕ', h_sanity:'РАССУДОК', h_power:'ЭНЕРГИЯ', know:'ЗНАНИЕ',
+  chapter:'ГЛАВА', ch1:'ТИШИНА', ch2:'ОТКЛИК', ch3:'ЛЁД',
+  endLabel:'КОНЦОВКА', of:'из', unlocked:'ОТКРЫТО',
+  btnNext:'ДАЛЬШЕ', saving:'автосохранение включено',
+  confirmNew:'Начать новую игру? Текущий прогресс будет потерян.',
+  s_lang:'ЯЗЫК / LANGUAGE', s_master:'ОБЩАЯ ГРОМКОСТЬ', s_music:'МУЗЫКА', s_sfx:'ЗВУКИ',
+  s_voice:'ОЗВУЧКА ТЕКСТА', s_vgender:'ГОЛОС ОЗВУЧКИ', s_vm:'МУЖСКОЙ', s_vf:'ЖЕНСКИЙ',
+  s_rate:'ТЕМП ГОЛОСА', s_tspeed:'СКОРОСТЬ ТЕКСТА', s_fx:'ЭФФЕКТЫ ЭКРАНА',
+  s_fs:'ПОЛНОЭКРАННЫЙ РЕЖИМ', s_fs_do:'ВКЛЮЧИТЬ', s_fs_on:'ВКЛЮЧЕНО',
+  s_fs_note:'Выйти из полноэкранного режима можно крестиком в углу экрана, клавишей ESC или закрыв это окно.',
+  s_reset:'СБРОСИТЬ',
+  s_voice_note:'Синтез речи сейчас на разработке, но можете опробывать прямо сейчас!',
+  s_slow:'МЕДЛЕННО', s_normal:'ОБЫЧНО', s_fast:'БЫСТРО', s_inst:'МГНОВЕННО',
+  speakers:{narr:'', sok:'СОКОЛОВ', vet:'ВЕТРОВА', gae:'ГАЕВ', kra:'КРАЙНОВА', echo:'ЭХО', radio:'РАДИО'},
+  badge:{bad:'ПЛОХАЯ КОНЦОВКА', normal:'ОБЫЧНАЯ КОНЦОВКА', good:'ХОРОШАЯ КОНЦОВКА', rare:'РЕДКАЯ КОНЦОВКА', 'true':'ИСТИННАЯ КОНЦОВКА', silent:'ТИХАЯ КОНЦОВКА'},
+  ver:'ЭХО v0.9.1-beta · ранний доступ',
+  dev:{
+    verline:'ВЕРСИЯ: v0.9.0-beta «Ранняя сборка»',
+    status:'СТАТУС: игра в разработке и НЕ полностью готова. Сюжет, баланс и озвучка могут измениться в будущих сборках.',
+    teamT:'КОМАНДА',
+    team:['Сценарий, код, дизайн — студия «Статика»','Звук — синтез в реальном времени (Web Audio API), без единого аудиофайла','Озвучка — синтез речи вашей системы'],
+    roadT:'ПЛАНЫ НА ПОЛНЫЕ ВЕРСИИ',
+    road:['ветки для каждого персонажа и дневник станции','актёрская озвучка и новые сцены в Камере','седьмая, секретная концовка','поддержка геймпада и версия для Steam'],
+    vkT:'ВЫПУСК НА VK PLAY',
+    vk:['упакуйте index.html в ZIP — файл должен лежать в корне архива','загрузите архив как HTML5-игру в черновики VK Play','проверьте игру во встроенном браузере платформы','все сохранения и настройки — локальные, сборка работает офлайн'],
+    thanks:'Спасибо, что играете в раннюю версию. Ваш выбор влияет на то, какой игра станет.'
+  }
+},
+en:{
+  title:'ECHO', sub:'signal from the Pole',
+  eyebrow:'polar station \u00abPOLE-1\u00bb · 89° S',
+  new:'NEW GAME', cont:'CONTINUE', endings:'ENDINGS', settings:'SETTINGS',
+  pause:'MENU', resume:'RESUME', toMenu:'MAIN MENU', again:'PLAY AGAIN', back:'BACK', yes:'YES', no:'NO',
+  h_trust:'TRUST', h_sanity:'SANITY', h_power:'POWER', know:'KNOWLEDGE',
+  chapter:'CHAPTER', ch1:'SILENCE', ch2:'RESPONSE', ch3:'ICE',
+  endLabel:'ENDING', of:'of', unlocked:'UNLOCKED',
+  btnNext:'CONTINUE', saving:'autosave enabled',
+  confirmNew:'Start a new game? Current progress will be lost.',
+  s_lang:'LANGUAGE / ЯЗЫК', s_master:'MASTER VOLUME', s_music:'MUSIC', s_sfx:'SOUND FX',
+  s_voice:'TEXT VOICEOVER', s_vgender:'VOICE GENDER', s_vm:'MALE', s_vf:'FEMALE',
+  s_rate:'VOICE RATE', s_tspeed:'TEXT SPEED', s_fx:'SCREEN EFFECTS',
+  s_fs:'FULLSCREEN MODE', s_fs_do:'ENABLE', s_fs_on:'ENABLED',
+  s_fs_note:'You can exit fullscreen with the ✕ in the corner of the screen, the ESC key, or by closing this window.',
+  s_reset:'RESET',
+  s_voice_note:'Speech synthesis is currently in development, but you can try it right now!',
+  s_slow:'SLOW', s_normal:'NORMAL', s_fast:'FAST', s_inst:'INSTANT',
+  speakers:{narr:'', sok:'SOKOLOV', vet:'VETROVA', gae:'GAEV', kra:'KRAYNOVA', echo:'THE ECHO', radio:'RADIO'},
+  badge:{bad:'BAD ENDING', normal:'NORMAL ENDING', good:'GOOD ENDING', rare:'RARE ENDING', 'true':'TRUE ENDING', silent:'SILENT ENDING'},
+  ver:'ECHO v0.9.1-beta · early access',
+  dev:{
+    verline:'VERSION: v0.9.0-beta \u00abEarly build\u00bb',
+    status:'STATUS: the game is in development and NOT fully finished. Story, balance and voiceover may change in future builds.',
+    teamT:'TEAM',
+    team:['Story, code, design — \u00abStatika\u00bb studio','Sound — real-time synthesis (Web Audio API), not a single audio file','Voiceover — your system\u2019s speech synthesis'],
+    roadT:'PLANS FOR FULL RELEASES',
+    road:['a story branch for every character and the station diary','actor voiceover and new scenes in the Chamber','a seventh, secret ending','gamepad support and a Steam version'],
+    vkT:'RELEASING ON VK PLAY',
+    vk:['pack index.html into a ZIP — the file must be at the archive root','upload the archive as an HTML5 game to VK Play drafts','test the game in the platform\u2019s built-in browser','all saves and settings are local, the build works offline'],
+    thanks:'Thank you for playing the early build. Your choice shapes what this game becomes.'
+  }
+}
+};
+function T(key){ var v=STR[S.lang]||STR.ru; return v[key]!==undefined?v[key]:(STR.ru[key]!==undefined?STR.ru[key]:key); }
+/* ============================================================
+   AUDIO — весь звук синтезируется на лету (Web Audio API).
+   Громко и насыщенно: ветер, дрон-музыка, радиошумы, морзянка,
+   удары сердца, стингеры, интерфейсные сигналы.
+   ============================================================ */
+var AUDIO = {
+  ctx:null, master:null, music:null, sfx:null, comp:null, started:false,
+  windSrc:null, windG:null, windF:null, droneOsc:[], droneF:null, droneG:null,
+  mood:'calm', moodTimer:null, hbTimer:null, stormG:null,
+
+  init:function(){
+    if(this.started) return;
+    try{ var C=window.AudioContext||window.webkitAudioContext; this.ctx=new C(); }catch(e){ return; }
+    if(!this.ctx) return;
+    var c=this.ctx;
+    this.comp=c.createDynamicsCompressor();
+    this.comp.threshold.value=-16; this.comp.knee.value=22; this.comp.ratio.value=9;
+    this.comp.attack.value=0.004; this.comp.release.value=0.22;
+    this.master=c.createGain(); this.master.gain.value=S.master;
+    this.music=c.createGain(); this.music.gain.value=S.music;
+    this.sfx=c.createGain();   this.sfx.gain.value=S.sfx;
+    this.music.connect(this.master); this.sfx.connect(this.master);
+    this.master.connect(this.comp); this.comp.connect(c.destination);
+    this.started=true;
+    this.wind(); this.drone(); this.setMood('calm');
+    if(this.ctx.state==='suspended'){ var r=this.ctx.resume(); if(r&&r.catch)r.catch(function(){}); }
+  },
+
+  /* --- буфер шума --- */
+  noiseBuf:function(sec,brown){
+    var c=this.ctx, n=Math.max(1,Math.floor(c.sampleRate*sec));
+    var b=c.createBuffer(1,n,c.sampleRate), d=b.getChannelData(0), last=0;
+    for(var i=0;i<n;i++){
+      var w=Math.random()*2-1;
+      if(brown){ last=(last+0.02*w)/1.02; d[i]=last*3.2; } else { d[i]=w; }
+    }
+    return b;
+  },
+
+  /* --- постоянный ветер --- */
+  wind:function(){
+    var c=this.ctx;
+    var src=c.createBufferSource(); src.buffer=this.noiseBuf(4,true); src.loop=true;
+    var f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=420; f.Q.value=0.7;
+    var g=c.createGain(); g.gain.value=0.30;
+    var lfo=c.createOscillator(); lfo.frequency.value=0.09;
+    var lg=c.createGain(); lg.gain.value=240;
+    lfo.connect(lg); lg.connect(f.frequency);
+    var lfo2=c.createOscillator(); lfo2.frequency.value=0.05;
+    var lg2=c.createGain(); lg2.gain.value=0.12;
+    lfo2.connect(lg2); lg2.connect(g.gain);
+    src.connect(f); f.connect(g); g.connect(this.music);
+    src.start(); lfo.start(); lfo2.start();
+    this.windSrc=src; this.windG=g; this.windF=f;
+  },
+
+  /* --- дрон-музыка: три голоса, перестраиваются под настроение --- */
+  chords:{
+    calm:[55,110,164.8], tense:[58.3,110,155.6], echo:[55,103.8,196],
+    panic:[61.7,116.5,146.8], silent:[49,98,147]
+  },
+  drone:function(){
+    var c=this.ctx;
+    this.droneF=c.createBiquadFilter(); this.droneF.type='lowpass';
+    this.droneF.frequency.value=520; this.droneF.Q.value=0.8;
+    this.droneG=c.createGain(); this.droneG.gain.value=0.16;
+    this.droneF.connect(this.droneG); this.droneG.connect(this.music);
+    var self=this;
+    [0,1,2].forEach(function(i){
+      var o=c.createOscillator();
+      o.type = i===2 ? 'triangle' : 'sawtooth';
+      o.frequency.value=AUDIO.chords.calm[i];
+      var og=c.createGain(); og.gain.value = i===2 ? 0.14 : 0.3;
+      o.connect(og); og.connect(self.droneF);
+      o.detune.value = (i-1)*6;
+      o.start();
+      self.droneOsc.push(o);
+    });
+    var flfo=c.createOscillator(); flfo.frequency.value=0.03;
+    var flg=c.createGain(); flg.gain.value=180;
+    flfo.connect(flg); flg.connect(this.droneF.frequency); flfo.start();
+    this.moodTimer=setInterval(function(){ self.applyMood(); }, 16000);
+  },
+  applyMood:function(){
+    if(!this.started) return;
+    var ch=this.chords[this.mood]||this.chords.calm, t=this.ctx.currentTime;
+    for(var i=0;i<3;i++){ if(this.droneOsc[i]) this.droneOsc[i].frequency.setTargetAtTime(ch[i], t, 1.4); }
+  },
+  setMood:function(m){
+    if(!this.started) return;
+    this.mood = this.chords[m] ? m : 'calm';
+    this.applyMood();
+    if(this.droneF){
+      var base = this.mood==='echo' ? 750 : 520;
+      this.droneF.frequency.setTargetAtTime(base, this.ctx.currentTime, 1.2);
+    }
+    var self=this;
+    if(this.hbTimer){ clearInterval(this.hbTimer); this.hbTimer=null; }
+    if(this.mood==='tense'){ this.hbTimer=setInterval(function(){ self.thump(0.5); },950); }
+    if(this.mood==='panic'){
+      this.hbTimer=setInterval(function(){ self.thump(0.75); setTimeout(function(){ self.thump(0.5); },240); },640);
+      this.shake();
+    }
+    if(this.mood==='echo' && this.droneF){
+      this.droneF.frequency.setTargetAtTime(750, this.ctx.currentTime, 1.2);
+    }
+  },
+  shake:function(){
+    var b=document.body;
+    b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+  },
+
+  /* --- базовый инструмент --- */
+  tone:function(freq,dur,type,vol,dest,slideTo){
+    if(!this.started) return;
+    var c=this.ctx, o=c.createOscillator(), g=c.createGain(), t=c.currentTime;
+    o.type=type||'sine'; o.frequency.setValueAtTime(freq,t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20,slideTo), t+dur);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||0.15, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(dest||this.sfx);
+    o.start(t); o.stop(t+dur+0.05);
+  },
+  burst:function(dur,vol,filtType,freq,dest){
+    if(!this.started) return;
+    var c=this.ctx, s=c.createBufferSource(); s.buffer=this.noiseBuf(dur+0.05,false);
+    var f=c.createBiquadFilter(); f.type=filtType||'highpass'; f.frequency.value=freq||1500;
+    var g=c.createGain(), t=c.currentTime;
+    g.gain.setValueAtTime(vol||0.2,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    s.connect(f); f.connect(g); g.connect(dest||this.sfx);
+    s.start(t); s.stop(t+dur+0.05);
+  },
+  thump:function(vol){
+    if(!this.started) return;
+    this.tone(52,0.16,'sine',vol*0.5,this.music,38);
+  },
+
+  /* --- интерфейс --- */
+  hover:function(){ this.tone(1400,0.045,'sine',0.05); },
+  click:function(){ this.tone(240,0.06,'square',0.16); this.burst(0.03,0.05,'highpass',4000); },
+  select:function(){ this.tone(520,0.07,'sine',0.18); var s=this; setTimeout(function(){ s.tone(780,0.1,'sine',0.16); },70); },
+  tick:function(){ this.tone(1750,0.018,'square',0.06); },
+
+  /* --- радио --- */
+  staticBurst:function(vol){ this.burst(0.28, vol||0.3, 'highpass', 1200); },
+  morse:function(){
+    if(!this.started) return;
+    var self=this, pat=[70,70,140,70,210,70,70,140], t=0;
+    pat.forEach(function(ms,i){
+      setTimeout(function(){
+        if(i%2===0) self.tone(600,ms/1000*0.9,'sine',0.14);
+        else self.burst(0.03,0.06,'highpass',2000);
+      },t); t+=ms;
+    });
+  },
+  whisper:function(){
+    if(!this.started) return;
+    var c=this.ctx, s=c.createBufferSource(); s.buffer=this.noiseBuf(1.3,false);
+    var f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1150; f.Q.value=7;
+    var d=c.createDelay(0.4); d.delayTime.value=0.09;
+    var fb=c.createGain(); fb.gain.value=0.5;
+    var g=c.createGain(), t=c.currentTime;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.4,t+0.15);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+1.2);
+    f.connect(d); d.connect(fb); fb.connect(d); d.connect(g);
+    f.connect(g); g.connect(this.sfx);
+    s.start(t); s.stop(t+1.4);
+  },
+
+  /* --- стингеры --- */
+  stinger:function(kind){
+    if(!this.started) return;
+    var s=this;
+    if(kind==='chapter'){ this.tone(196,1.2,'sine',0.25,this.music,98); this.burst(0.5,0.12,'lowpass',600,this.music); }
+    if(kind==='danger'){ this.tone(110,0.9,'sawtooth',0.22,this.music,50); this.burst(0.6,0.2,'lowpass',400,this.music); }
+    if(kind==='discovery'){ [440,554,659,880].forEach(function(f,i){ setTimeout(function(){ s.tone(f,0.35,'sine',0.16); }, i*110); }); }
+  },
+  endingStinger:function(t){
+    if(!this.started) return;
+    var s=this;
+    if(t==='bad'){ this.tone(98,2.2,'sawtooth',0.3,this.music,34); this.burst(1.6,0.25,'lowpass',350,this.music); }
+    else if(t==='good'){ [262,330,392,523].forEach(function(f,i){ setTimeout(function(){ s.tone(f,0.8,'sine',0.18); }, i*160); }); }
+    else if(t==='rare'){ [220,233,330].forEach(function(f,i){ setTimeout(function(){ s.tone(f,1.6,'triangle',0.14); }, i*200); }); }
+    else if(t==='true'){ [392,494,587,784,988].forEach(function(f,i){ setTimeout(function(){ s.tone(f,0.7,'sine',0.15); }, i*120); }); }
+    else if(t==='silent'){ this.tone(65,3.5,'sine',0.3,this.music); }
+    else { this.tone(330,0.5,'sine',0.2); setTimeout(function(){ s.tone(262,0.9,'sine',0.2); },320); }
+  },
+
+  applyVolumes:function(){
+    if(!this.started) return;
+    this.master.gain.value=S.master;
+    this.music.gain.value=S.music;
+    this.sfx.gain.value=S.sfx;
+  },
+
+  /* --- приглушение музыки, когда говорит озвучка (голос громче музыки) --- */
+  duckMusic:function(on){
+    if(!this.started) return;
+    var t=this.ctx.currentTime, g=this.music.gain;
+    if(g.cancelScheduledValues) g.cancelScheduledValues(t);
+    g.setTargetAtTime(on ? S.music*0.1 : S.music, t, 0.3);
+  }
+};
+
+/* ============================================================
+   VOICE — озвучка через системный синтез речи.
+   Мужской и женский голос; во время речи музыка приглушается.
+   ============================================================ */
+var VOICE = {
+  ok:('speechSynthesis' in window),
+  /* gender: 'm' | 'f'. Подбираем системный голос по имени;
+     если голоса нужного пола нет — различаем высотой тона. */
+  pick:function(gender){
+    if(!this.ok) return null;
+    var vs=speechSynthesis.getVoices();
+    if(!vs||!vs.length) return null;
+    var want=(S.lang==='ru')?'ru':'en', list=[];
+    for(var i=0;i<vs.length;i++){
+      var l=(vs[i].lang||'').toLowerCase();
+      if(l.indexOf(want)===0) list.push(vs[i]);
+    }
+    if(!list.length) return null;
+    var male=(gender==='m');
+    var re = male
+      ? (want==='ru'
+        ? /pavel|павел|yuri|urii|юрий|dmitri|дмитрий|maxim|максим|aleksandr|александр|artem|артем|kirill|кирилл|sergey|сергей|nikolay|николай|игорь|олег|борис|виктор|мужск|\bmale\b/i
+        : /\bmale\b|david|daniel|alex|fred|george|guy|james|mark|tom|rishi|arthur|oliver|liam|matthew/i)
+      : (want==='ru'
+        ? /irina|ирина|milena|милена|alyona|алена|алёна|katya|екатерина|elena|елена|tatyana|татьяна|olga|ольга|svetlana|светлана|polina|полина|victoria|виктория|marina|марина|google русский|женск|\bfemale\b/i
+        : /\bfemale\b|samantha|victoria|karen|moira|tessa|fiona|susan|allison|ava|sandy|nicky|zira|hazel|sonia|libby|aria|jenny|kate|serena|joanna|salli|emma/i);
+    for(var j=0;j<list.length;j++){
+      var nm=list[j].name||'';
+      if(male && /female|женск/i.test(nm)) continue;
+      if(re.test(nm)) return list[j];
+    }
+    return null;
+  },
+  speak:function(text){
+    if(!this.ok || !S.voice || !text) return;
+    try{
+      speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang = S.lang==='ru' ? 'ru-RU' : 'en-US';
+      u.rate = S.rate;
+      u.volume = 1.0; /* голос на максимум — музыка приглушается */
+      var g=(S.vgender==='m')?'m':'f';
+      var v=this.pick(g);
+      if(v){ u.voice=v; u.pitch=(g==='m')?0.9:1.05; }
+      else { u.pitch=(g==='m')?0.6:1.3; }
+      var self=this;
+      u.onstart=function(){ self.duck(true); };
+      u.onend=function(){ self.duck(false); };
+      u.onerror=function(){ self.duck(false); };
+      this.duck(true);
+      speechSynthesis.speak(u);
+    }catch(e){}
+  },
+  duck:function(on){ AUDIO.duckMusic(on); },
+  stop:function(){
+    if(this.ok){ try{ speechSynthesis.cancel(); }catch(e){} }
+    AUDIO.duckMusic(false);
+  }
+};
+if(VOICE.ok && speechSynthesis.addEventListener){
+  speechSynthesis.addEventListener('voiceschanged', function(){ VOICE.pick(S.vgender); });
+}
+/* ============================================================
+   СЮЖЕТ — узлы истории.
+   Строка: [кто, RU, EN]. Выборка: {ru,en,do,to,if}
+   do: {trust,sanity,power:±n, flags:[], clues:[]}
+   ============================================================ */
+var N = {};
+
+/* ---------- ГЛАВА 1 · ТИШИНА ---------- */
+N.start = {
+  ch:1, mood:'calm',
+  lines:[
+    ['narr','Антарктида. Станция «ПОЛЮС-1». Шестой месяц полярной ночи. За стенами — минус семьдесят и ветер, стирающий следы за минуту.','Antarctica. POLE-1 station. The sixth month of polar night. Outside: minus seventy and a wind that erases footprints in a minute.'],
+    ['narr','Вы — Соколов, радист станции. Ночная смена, радиорубка, кружка остывшего чая. До рассвета — четыре месяца.','You are Sokolov, the station radio operator. Night shift, radio room, a mug of cold tea. Sunrise is four months away.'],
+    ['narr','Эфир пуст, как всегда зимой. Даже материк отвечает через помехи — лениво и неохотно.','The airwaves are empty, as always in winter. Even the mainland answers through static — lazily, reluctantly.']
+  ],
+  choices:[
+    {ru:'Проверить аппаратуру перед выходом в эфир', en:'Check the equipment before going on air', do:{power:1}, to:'start2'},
+    {ru:'Сразу выйти в эфир — и так всё работает', en:'Go on air right away — everything works fine anyway', do:{flags:['sloppy']}, to:'start2'}
+  ]
+};
+
+N.start2 = {
+  mood:'calm', auto:'signal',
+  lines:[
+    ['narr','Вы выходите в эфир, передаёте метеосводку, координаты — всё по регламенту. Рутина.','You key the mic, transmit the weather report, the coordinates — everything by the book. Routine.'],
+    ['narr','И только когда вы отпускаете ключ... из динамиков возвращается ваш собственный голос. Слово в слово. С вашими паузами.','And just as you release the key... your own voice comes back through the speakers. Word for word. With your pauses.'],
+    ['sok','Помехи? Переотражение от слоёв? Эхо?','Static? Layer bounce? An echo?']
+  ]
+};
+
+N.signal = {
+  mood:'echo',
+  lines:[
+    ['narr','Частота 7430 кГц. Эхо повторяет сводку ещё раз. И ещё. Но вот странность: второй пакет вы ещё НЕ передавали.','Frequency 7430 kHz. The echo repeats the report again. And again. But here is the strange part: you have NOT transmitted the second packet yet.'],
+    ['narr','Голос продолжает. Он называет координаты, которые вы собирались передать только завтра.','The voice goes on. It reads out the coordinates you were planning to send only tomorrow.']
+  ],
+  choices:[
+    {ru:'Записать всё на ленту и пометить в журнале', en:'Record everything on tape and log it', do:{clues:['c1']}, to:'meet'},
+    {ru:'Немедленно доложить командиру Ветровой', en:'Report to commander Vetrova immediately', do:{trust:1}, to:'meet'},
+    {ru:'Ответить в эфир: «Слушаю вас»', en:'Answer on air: "I hear you"', do:{flags:['answered'],sanity:-1}, secret:true, to:'meet'}
+  ]
+};
+
+N.meet = {
+  mood:'calm',
+  lines:[
+    ['vet','Итак. Радист поймал эхо, которое отвечает раньше вопроса. Есть версии, кроме сбоя?','So. The radio operator caught an echo that answers before the question. Any theories besides a malfunction?'],
+    ['gae','Отражение от ионосферы, командир. Лёд сам по себе — гигантская антенна. Плюс наш трансивер старше меня.','Ionospheric reflection, commander. The ice is a giant antenna all by itself. Plus our transceiver is older than I am.'],
+    ['kra','А я скажу другое: Соколов не спит третьи сутки. Эхо или не эхо — но нам всем нужен сон.','I will say something else: Sokolov has not slept for three days. Echo or no echo — we all need sleep.']
+  ],
+  choices:[
+    {ru:'Рассказать всё как есть. Экипаж должен знать.', en:'Tell it exactly as it is. The crew must know.', do:{trust:1,sanity:1}, to:'night2'},
+    {ru:'Смягчить историю: «мелкий сбой, разберусь»', en:'Soften the story: "a minor glitch, I will sort it out"', do:{flags:['downplay']}, to:'night2'},
+    {ru:'После совещания поговорить с Крайновой наедине', en:'Talk to Kraynova privately after the meeting', do:{sanity:1,flags:['told_k']}, to:'night2'}
+  ]
+};
+
+N.night2 = {
+  mood:'echo',
+  lines:[
+    ['narr','Вторая ночь. Вы ставите эксперимент: читаете в эфир стихи, нарочно с ошибками.','Second night. You run an experiment: you read poetry into the mic, deliberately making mistakes.'],
+    ['narr','Эхо возвращает текст через семь секунд. С ошибками. С вашими запинками. Потом — через минуту. Потом — раньше, чем вы начали читать.','The echo returns the text seven seconds later. Mistakes included. With your stumbles. Then — a minute later. Then — before you even started reading.']
+  ],
+  choices:[
+    {ru:'Провести контрольный тест морзянкой', en:'Run a controlled test in Morse code', do:{clues:['c2']}, to:'night2b'},
+    {ru:'Молчать и просто слушать', en:'Stay silent and just listen', do:{flags:['listener'],clues:['c4'],sanity:-1}, to:'night2b'},
+    {ru:'Спросить в эфир: «Кто ты?»', en:'Ask on air: "Who are you?"', do:{flags:['answered'],sanity:-1}, secret:true, to:'night2b'}
+  ]
+};
+
+N.night2b = {
+  mood:'echo', auto:'sleep',
+  lines:[
+    ['narr','Ночь проходит на удивление тихо. Только под утро эхо один раз произносит ваше имя.','The night passes surprisingly quietly. Only at dawn the echo says your name once.'],
+    ['narr','Не позывные. Имя. Такое знаете только вы — и человек, который вас назвал.','Not the callsign. The name. Only you know it — and the person who gave it to you.'],
+    ['echo','...со-ко-лов...','...so-ko-lov...']
+  ]
+};
+
+N.sleep = {
+  mood:'calm',
+  lines:[
+    ['narr','Крайнова застаёт вас у передатчика «на рассвете» — то есть в полной темноте. Ставит на стол чай и молча смотрит.','Kraynova finds you by the transmitter "at dawn" — which means in total darkness. She puts tea on the table and just looks at you.'],
+    ['kra','Пейте. Это не снотворное, просто зверобой. И потом: в медблоке лежит папка со старыми бумагами станции. С шестидесятых. Вдруг пригодится.','Drink. It is not a sedative, just St. John\u2019s wort. And there is a folder with the station\u2019s old papers in the med bay. From the sixties. Might come in handy.']
+  ],
+  choices:[
+    {ru:'Выпить чай и наконец поспать', en:'Drink the tea and finally get some sleep', do:{sanity:1}, to:'act2'},
+    {ru:'Отказаться: «мне надо дежурить»', en:'Refuse: "I have to stay on watch"', do:{flags:['stubborn'],sanity:-1}, to:'act2'},
+    {ru:'Забрать папку с архивами 1963 года', en:'Take the folder with the 1963 archives', do:{clues:['c3']}, to:'act2'}
+  ]
+};
+/* ---------- ГЛАВА 2 · ОТКЛИК ---------- */
+
+N.act2 = {
+  ch:2, mood:'echo',
+  lines:[
+    ['narr','Третья ночь. Вы ещё не притронулись к ключу. Динамики оживают сами: эхо передаёт завтрашнюю сводку. Вашу. Без единой ошибки.','Third night. You have not touched the key yet. The speakers come alive on their own: the echo is transmitting tomorrow\u2019s report. Yours. Without a single mistake.'],
+    ['gae','Соколов, ты слышишь?! Оно отвечает РАНЬШЕ, чем мы спрашиваем! Так не бывает — даже если очень хочется!','Sokolov, do you hear that?! It answers BEFORE we even ask! That does not happen — no matter how much you want it to!']
+  ],
+  choices:[
+    {ru:'Успокоить команду: «это петля задержки, разберусь»', en:'Calm the team down: "it is a delay loop, I will deal with it"', do:{trust:1}, to:'plan'},
+    {ru:'Проверить генератор, антенну и заземление', en:'Check the generator, the antenna and the grounding', do:{power:1}, to:'plan'},
+    {ru:'Зафиксировать всё: время, частоты, спектрограммы', en:'Document everything: times, frequencies, spectrograms', do:{clues:['c5']}, to:'plan'}
+  ]
+};
+
+N.plan = {
+  mood:'tense',
+  lines:[
+    ['vet','Решаем. Вариант первый: радиомолчание и разбор передатчика. Вариант второй: разбираемся до конца. И ещё — Гаев нашёл на старой карте пометку: в двенадцати километрах законсервированный «Полюс-0». Шестьдесят третий год.','We decide. Option one: radio silence and dismantling the transmitter. Option two: we see this through. Also — Gaev found a note on an old map: twelve kilometers out there is the decommissioned POLE-0. Year sixty-three.'],
+    ['gae','И вот что интересно, командир: законсервирован он со скандалом. Всю документацию вывезли, а оператора... в списках не значится.','And here is the interesting part, commander: it was decommissioned amid a scandal. All the documentation was shipped out, and the operator... is not on any list.']
+  ],
+  choices:[
+    {ru:'Предложить экспедицию к «Полюсу-0»', en:'Propose an expedition to POLE-0', to:'exp_prep'},
+    {ru:'Остаться на станции и поставить чистый эксперимент', en:'Stay at the station and run a clean experiment', to:'stay1'},
+    {ru:'Ввести радиомолчание: пусть лёд подождёт', en:'Impose radio silence: let the ice wait', do:{flags:['sealed'],trust:-1}, secret:true, to:'stay1'}
+  ]
+};
+
+/* --- ветка экспедиции --- */
+N.exp_prep = {
+  mood:'calm',
+  lines:[
+    ['narr','Собираетесь быстро: санки, рация, список Гаева из трёх пунктов и спор о том, что из этого лишнее.','You pack fast: a sledge, a radio, Gaev\u2019s three-item checklist, and an argument about which items are redundant.']
+  ],
+  choices:[
+    {ru:'Аварийный НЗ и сигнальные ракеты', en:'Emergency rations and signal flares', do:{flags:['gear_flare']}, to:'exp_who'},
+    {ru:'Топливо и тепловые пакеты', en:'Fuel and heat packs', do:{flags:['gear_fuel'],power:-1}, to:'exp_who'},
+    {ru:'Инструменты, тросы, лом', en:'Tools, ropes, a crowbar', do:{flags:['gear_tools']}, to:'exp_who'}
+  ]
+};
+
+N.exp_who = {
+  mood:'calm',
+  lines:[
+    ['vet','Я иду с тобой. — Ветрова уже застёгивает куртку. — Или вы двое хотите встретить шестьдесят третий год без командира?','I am coming with you. — Vetrova is already zipping up her jacket. — Or do you two want to greet the year sixty-three without a commander?']
+  ],
+  choices:[
+    {ru:'Идти вдвоём с Ветровой', en:'Go together with Vetrova', do:{trust:1,flags:['with_vet']}, to:'exp_out'},
+    {ru:'Взять Гаева — он знает технику', en:'Take Gaev — he knows the hardware', do:{trust:1,flags:['with_gae']}, to:'exp_out'},
+    {ru:'Идти одному: меньше людей в буране', en:'Go alone: fewer people out in the blizzard', do:{flags:['alone'],sanity:-1}, to:'exp_out'}
+  ]
+};
+
+N.exp_out = {
+  mood:'echo',
+  lines:[
+    ['narr','Пять часов по плато. На девятом километре вас накрывает первый порыв ветра, а рация начинает гудеть сама — низко, утробно.','Five hours across the plateau. At kilometer nine the first gust hits you, and the radio starts humming on its own — low, guttural.'],
+    ['narr','«Полюс-0» — это мачта, полузасыпанный вход и тишина, которая звучит громче ветра.','POLE-0 is a mast, a half-buried entrance, and a silence that sounds louder than the wind.'],
+    ['narr','Под входом — люк. Из люка поднимается тёплый воздух. В минус семьдесят это хуже, чем холод.','Below the entrance there is a hatch. Warm air rises from it. At minus seventy, that is worse than the cold.']
+  ],
+  choices:[
+    {ru:'Спуститься под лёд прямо сейчас', en:'Descend under the ice right now', do:{flags:['desc_now'],clues:['c6']}, secret:true, to:'vault1'},
+    {ru:'Вернуться на станцию до шторма', en:'Head back to the station before the storm', do:{flags:['returned']}, to:'a3_storm'}
+  ]
+};
+
+/* --- ветка на станции --- */
+N.stay1 = {
+  mood:'calm',
+  lines:[
+    ['narr','Эксперимент: вы шлёте в эфир один и тот же импульс и замеряете, когда он вернётся.','The experiment: you send the same pulse into the air and measure when it comes back.'],
+    ['narr','Полночь: плюс семь секунд. Час ночи: плюс две. Два: ноль. Три часа: МИНУС восемь. Ответ приходит раньше вопроса, и это уже не эхо.','Midnight: plus seven seconds. One a.m.: plus two. Two: zero. Three a.m.: MINUS eight. The answer arrives before the question, and that is no longer an echo.']
+  ],
+  choices:[
+    {ru:'Живой микрофон в эфире круглосуточно', en:'Keep a live microphone on air around the clock', do:{flags:['live_mic'],sanity:-1}, to:'stay2'},
+    {ru:'Импульсы раз в час, строго по протоколу', en:'Hourly pulses, strictly by protocol', do:{power:-1}, to:'stay2'},
+    {ru:'Глушить антенну и молчать до эвакуации', en:'Ground the antenna and stay silent until evacuation', do:{flags:['sealed'],power:1}, to:'stay2'}
+  ]
+};
+
+N.stay2 = {
+  mood:'echo', auto:'a3_storm',
+  lines:[
+    ['narr','На четвёртые сутки генератор чихает. Датчик топлива ругается, свет мигает в такт гулу — а гул уже не в рации. Он в стенах.','On the fourth day the generator coughs. The fuel sensor complains, and the light flickers in rhythm with the hum — and the hum is no longer in the radio. It is in the walls.'],
+    ['kra','Соколов. Оно сегодня спрашивало моим голосом. Спрашивало, как вы себя чувствуете. Я ответила. Оно сказало: «Я знаю».','Sokolov. Today it asked in my voice. It asked how you were feeling. I answered. It said: "I know".']
+  ]
+};
+/* ---------- ГЛАВА 3 · ЛЁД ---------- */
+
+N.a3_storm = {
+  ch:3, mood:'panic',
+  lines:[
+    ['narr','Шторм обрушивается на станцию, как состав из вагонов. Рвёт антенну, гасит свет и оставляет вам десять часов дизеля — и гул, который больше не притворяется фоном.','The storm hits the station like a freight train. It tears off the antenna, kills the lights, and leaves you with ten hours of diesel — and a hum that no longer pretends to be background noise.'],
+    ['vet','Мачта держится на честном слове! Кто-то должен закрепить растяжки, или мы останемся без связи совсем!','The mast is holding on a prayer! Someone has to secure the guy lines, or we lose the radio for good!']
+  ],
+  choices:[
+    {ru:'Выйти в шторм и закрепить мачту', en:'Go out into the storm and secure the mast', do:{trust:2,sanity:-1,flags:['hero']}, to:'a3_after'},
+    {ru:'Держать всех внутри и пережидать', en:'Keep everyone inside and wait it out', do:{trust:-1,flags:['waited']}, to:'a3_after'},
+    {ru:'Идти на голос Эха — он зовёт к люку', en:'Follow the Echo\u2019s voice — it is calling you to the hatch', do:{sanity:-1,flags:['followed']}, secret:true,
+      if:function(s){ return !!(s.flags.answered||s.flags.listener||s.flags.live_mic); }, to:'vault_direct'}
+  ]
+};
+
+N.a3_after = {
+  mood:'tense', auto:'vault_call',
+  lines:[
+    ['narr','Антенна выстояла. Или выстояли вы: Крайнова до утра считает у вас рёбра, а Гаев заваривает чай на резервном котле.','The antenna survived. Or you did: Kraynova spends the night counting your ribs while Gaev brews tea on the backup boiler.'],
+    ['narr','К утру шторм стихает. И тогда все слышат: гул идёт не из рации. Он под полом. Он зовёт.','By morning the storm dies down. And then everyone hears it: the hum is not coming from the radio. It is under the floor. It is calling.'],
+    ['vet','Двенадцать километров. Раз ты всё равно пойдёшь — идём вместе. Но кто-то должен остаться на связи.','Twelve kilometers. Since you will go anyway — we go together. But someone has to stay on the radio.']
+  ]
+};
+
+N.vault_call = {
+  mood:'echo', auto:'vault1',
+  lines:[
+    ['narr','Вы идёте к «Полюсу-0» «на рассвете» — то есть в сумерках, которые полярная ночь выдаёт за рассвет. Рация в кармане шепчет вашими позывными.','You head to POLE-0 "at dawn" — that is, in the twilight the polar night passes off as dawn. The radio in your pocket whispers in your own callsign.'],
+    ['narr','Люк открыт. Тёплый воздух поднимается по ступеням, как дыхание. На первой ступени — свежий след ботинка. Вашего размера.','The hatch is open. Warm air climbs the steps like breath. On the first step there is a fresh boot print. Your size.']
+  ]
+};
+
+N.vault_direct = {
+  mood:'echo', auto:'vault1',
+  lines:[
+    ['narr','Гул ведёт вас сквозь шторм, как поводок. Вы не помните, как прошли двенадцать километров, — но люк уже перед вами, и он открыт.','The hum leads you through the storm like a leash. You do not remember walking the twelve kilometers — but the hatch is already in front of you, and it is open.'],
+    ['echo','ниже. ниже. ниже.','down. down. down.']
+  ]
+};
+
+/* ---------- КАМЕРА ---------- */
+N.vault1 = {
+  mood:'echo',
+  lines:[
+    ['narr','Под льдом — сухая тёплая камера, вырубленная в реликтовом льду. Стеллажи с катушками, стол, радиорубка. Всё ждёт. Долго ждёт.','Under the ice there is a dry, warm chamber cut into relic ice. Racks of tape reels, a table, a radio room. Everything is waiting. It has been waiting a long time.'],
+    ['narr','В центре — резонансный колодец. Из него поднимается ваш голос: он читает сводку, которую вы передадите только завтра.','In the center there is a resonance well. Your own voice rises from it, reading the report you are going to transmit only tomorrow.'],
+    ['narr','На столе — журнал 1963 года. Записи обрываются на середине фразы: «оно отвечает раньше, значит надо...»','On the table lies the 1963 log. The entries break off mid-sentence: "it answers before the question, which means we must..."']
+  ],
+  choices:[
+    {ru:'Читать журнал 1963 года до конца', en:'Read the 1963 log to the end', do:{flags:['read_archive']},
+      if:function(s){ return s.clues.length>=4; }, to:'vault2'},
+    {ru:'Включить передатчик и говорить с Эхом', en:'Switch on the transmitter and talk to the Echo', do:{flags:['spoke']},
+      if:function(s){ return !!s.flags.answered; }, secret:true, to:'vault_speak'},
+    {ru:'Вскрыть колодец ломом', en:'Pry the well open with the crowbar', do:{sanity:-3,flags:['forced']}, secret:true, to:'vault2'},
+    {ru:'Разрушить передатчик. Навсегда.', en:'Destroy the transmitter. For good.', do:{flags:['broke_radio']}, secret:true, to:'end_silence'},
+    {ru:'Забрать журнал и уходить к эвакуации', en:'Take the log and head back for the evacuation', to:'evac_choice'}
+  ]
+};
+
+N.vault2 = {
+  mood:'echo',
+  lines:[
+    ['narr','Последние страницы журнала написаны другим почерком. Оператор Ковалёв, шестьдесят третий год: «Петля замкнулась. Мы слышали себя — из завтра. Эхо — это не оно. ЭТО МЫ».','The last pages of the log are written in a different hand. Operator Kovalev, 1963: "The loop has closed. We heard ourselves — from tomorrow. The echo is not it. It is US."'],
+    ['narr','Дальше — схема: антенна в колодец, колодец в многолетний лёд. Лёд хранит всё, что слышал. И отвечает раньше, потому что уже знает ответ.','Then — a diagram: an antenna into the well, the well into the multi-year ice. The ice keeps everything it has ever heard. And it answers early, because it already knows the reply.'],
+    ['narr','Последняя строка: «Чтобы петля спала — пусть станция заговорит сама с собой. Один голос. Один вопрос. Один ответ». Ниже — пусто.','The last line: "For the loop to sleep — let the station speak with itself. One voice. One question. One answer." Below that — nothing.']
+  ],
+  choices:[
+    {ru:'Выйти в эфир и прочитать журнал льду — от первой записи до последней строки', en:'Go on the air and read the whole log to the ice — first entry to last line', do:{flags:['truth_read']}, secret:true, to:'end_archive'},
+    {ru:'Забрать журнал и молчать о найденном', en:'Take the log and keep the find to yourself', do:{flags:['hidden_truth']}, to:'evac_choice'}
+  ]
+};
+
+N.vault_speak = {
+  mood:'echo',
+  lines:[
+    ['narr','Вы включаете передатчик. Гул замирает. И — впервые — эхо отвечает не вашим голосом. Оно говорит вашей интонацией, но словами, которых вы не говорил.','You switch on the transmitter. The hum freezes. And — for the first time — the echo answers not in your voice. It speaks with your intonation, but with words you never said.'],
+    ['echo','Я — то, что останется, когда уйдут все. Слышал тебя. Слышу. Буду слышать.','I am what remains when everyone is gone. I heard you. I hear you. I will keep hearing you.'],
+    ['echo','Хочешь, чтобы жили? Стань голосом. Один в эфире — все на земле.','You want them to live? Become the voice. One on the air — all of them on the ground.']
+  ],
+  choices:[
+    {ru:'Согласиться. Шёпотом: «Я готов»', en:'Agree. In a whisper: "I am ready"', do:{flags:['deal']}, secret:true, to:'end_voice'},
+    {ru:'Отказаться: «У нас есть свои голоса»', en:'Refuse: "We have voices of our own"', do:{sanity:1,flags:['refused']}, to:'evac_choice'}
+  ]
+};
+
+N.evac_choice = {
+  mood:'tense',
+  lines:[
+    ['narr','Шторм уходит к морю. Ветрова выходит на связь с базы: «Самолёт сможет сесть в окно с девяти до десяти. Потом — неделя бурана. Решаем сейчас».','The storm drifts out to sea. Vetrova raises the base on the radio: "The plane can land in the window from nine to ten. After that — a week of blizzard. We decide now."'],
+    ['narr','Гул под льдом стал тише. Он ждёт. Он умеет ждать — у него впереди вечность.','The hum under the ice has grown quieter. It is waiting. It knows how to wait — it has an eternity ahead.']
+  ],
+  choices:[
+    {ru:'Эвакуация. Немедленно. Всем составом.', en:'Evacuation. Immediately. The whole crew.', to:'end_normal'},
+    {ru:'Остаться до конца смены — всем составом', en:'Stay until the end of the shift — the whole crew',
+      if:function(s){ return s.stats.trust>=3; }, to:'end_good'},
+    {ru:'Заглушить «Полюс-1» навсегда', en:'Silence POLE-1 for good',
+      if:function(s){ return !!s.flags.sealed; }, secret:true, to:'end_silence'}
+  ]
+};
+
+/* ---------- КОНЦОВКИ ---------- */
+N.end_static = {
+  ending:'static', mood:'panic',
+  lines:[
+    ['narr','Лёд поёт всё громче, и где-то в этом хоре тонет ваш голос. Вы отвечаете на вопросы, которые ещё не задали, и занимаете очередь, которая не движется.','The ice sings louder and louder, and somewhere in that choir your own voice drowns. You answer questions no one has asked yet and join a queue that never moves.'],
+    ['vet','Соколов?.. Соколов, отойдите от передатчика!','Sokolov?.. Sokolov, step away from the transmitter!'],
+    ['narr','Частота 7430 продолжает работать. Теперь — без перерывов.','Frequency 7430 keeps working. Now — around the clock.']
+  ]
+};
+
+N.end_normal = {
+  ending:'normal', mood:'calm',
+  lines:[
+    ['narr','Вы улетаете в девять сорок. Внизу — станция, похожая на игрушку, и белое поле, которое внимательно смотрит вслед.','You take off at nine forty. Below — the station, small as a toy, and the white field watching you go.'],
+    ['narr','«Полюс-1» консервируют. Частоту 7430 ставят на контроль. Официальная версия: переотражение.','POLE-1 is mothballed. Frequency 7430 is put under monitoring. The official version: wave reflection.'],
+    ['sok','Переотражение. Конечно. Просто лёд ответил раньше вопроса.','Wave reflection. Of course. The ice just answered before the question.']
+  ]
+};
+
+N.end_good = {
+  ending:'good', mood:'calm',
+  lines:[
+    ['narr','Вы остаётесь — все пятеро. Станция доживает до рассвета, и однажды в марте солнце касается мачты, как обещало.','You stay — all five of you. The station lives to see the dawn, and one March day the sun touches the mast, as promised.'],
+    ['narr','Теперь у «Полюса-1» есть свой регламент: один час тишины в сутки. Один вопрос в эфире. Один ответ.','POLE-1 now has its own protocol: one hour of silence a day. One question on the air. One answer.'],
+    ['kra','Оно перестало отвечать раньше. Почти. Говорят, ему просто нравится слушать.','It stopped answering early. Almost. They say it simply enjoys listening.']
+  ]
+};
+
+N.end_voice = {
+  ending:'voice', mood:'echo',
+  lines:[
+    ['narr','Экипаж улетает в окно между буранами. Вы провожаете их до мачты и возвращаетесь в радиорубку — уже навсегда.','The crew flies out in the window between blizzards. You see them off at the mast and return to the radio room — for good.'],
+    ['narr','Через год на «Полюс-1» прибывает новый радист. В первую же ночь он слышит в эфире свой голос — с ошибками, слово в слово.','A year later a new operator arrives at POLE-1. On their very first night they hear their own voice on the air — mistakes included, word for word.'],
+    ['echo','до связи.','see you on the air.']
+  ]
+};
+
+N.end_archive = {
+  ending:'archive', mood:'calm',
+  lines:[
+    ['narr','Вы выходите в эфир в пять утра и читаете в колодец весь журнал — от первой записи до последней строки. Лёд слушает.','You go on the air at five in the morning and read the entire log into the well — from the first entry to the last line. The ice listens.'],
+    ['narr','На слове «конец» гул выдыхает. Впервые за шестьдесят три года частота 7430 становится просто частотой.','At the word "end" the hum exhales. For the first time in sixty-three years, frequency 7430 becomes just a frequency.'],
+    ['narr','Журнал ляжет в архив с пометкой «особый». А у станции появится новая традиция: раз в год читать льду стихи. С ошибками.','The log will go to the archive stamped "special". And the station will have a new tradition: once a year, reading poetry to the ice. Mistakes included.']
+  ]
+};
+
+N.end_silence = {
+  ending:'silence', mood:'silent',
+  lines:[
+    ['narr','Передатчик умирает легко: три удара ломом и один — тишиной, которая наступает сразу.','The transmitter dies easily: three blows of the crowbar and one blow of silence that follows at once.'],
+    ['narr','Впервые за полгода эфир чист. Никто не отвечает раньше вопроса, потому что вопросов больше нет.','For the first time in half a year the airwaves are clean. No one answers before the question, because there are no questions left.'],
+    ['narr','Вам снятся беззвучные сны. А снег помнит частоту 7430 — но снегу никто не верит.','You dream soundless dreams. And the snow remembers frequency 7430 — but no one believes the snow.']
+  ]
+};
+/* ============================================================
+   ДВИЖОК
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+
+var state = { node:null, li:0, stats:{trust:3,sanity:4,power:4}, flags:{}, clues:[], chapter:0 };
+var typing=false, typeTimer=null, autoTimer=null, autoFired=false;
+
+/* ---------- экраны/оверлеи ---------- */
+function showScreen(id){
+  var all=document.querySelectorAll('.screen');
+  for(var i=0;i<all.length;i++) all[i].classList.remove('active');
+  $(id).classList.add('active');
+}
+function openOv(id){ $(id).classList.add('active'); }
+function closeOv(id){ $(id).classList.remove('active'); }
+function anyOverlayOpen(){
+  var o=document.querySelectorAll('.overlay.active');
+  return o.length>0;
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  $('bar-trust').style.width  = Math.max(0,Math.min(6,state.stats.trust))/6*100+'%';
+  $('bar-sanity').style.width = Math.max(0,Math.min(6,state.stats.sanity))/6*100+'%';
+  $('bar-power').style.width  = Math.max(0,Math.min(6,state.stats.power))/6*100+'%';
+  var kn=$('hud-know');
+  kn.textContent = T('know')+': '+state.clues.length+'/6';
+  var names=[];
+  for(var i=0;i<state.clues.length;i++){
+    var c=CLUES[state.clues[i]]; if(c) names.push(S.lang==='ru'?c.ru:c.en);
+  }
+  kn.title = names.length?names.join(' · '):'—';
+}
+
+/* ---------- глава ---------- */
+function showChapter(n){
+  var card=$('chapter-card');
+  $('ch-num').textContent = T('chapter')+' '+n;
+  $('ch-name').textContent = T('ch'+n);
+  card.classList.add('show');
+  AUDIO.stinger('chapter');
+  setTimeout(function(){ card.classList.remove('show'); }, 2100);
+}
+
+/* ---------- сохранение ---------- */
+function saveGame(){
+  store.set('echo_save', { node:state.node, stats:state.stats, flags:state.flags,
+    clues:state.clues, chapter:state.chapter });
+}
+function hasSave(){ var s=store.get('echo_save',null); return !!(s && s.node && N[s.node]); }
+
+/* ---------- переход ---------- */
+function go(id){
+  var n=N[id]; if(!n) return;
+  if(typeTimer){ clearTimeout(typeTimer); typeTimer=null; }
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  autoFired=false; typing=false;
+  state.node=id; state.li=0;
+  if(n.ch && n.ch!==state.chapter){ state.chapter=n.ch; showChapter(n.ch); }
+  AUDIO.setMood(n.mood||'calm');
+  if(n.ending) store.del('echo_save'); else saveGame();
+  updateHUD();
+  renderNode(false);
+}
+
+/* ---------- вывод строки ---------- */
+function clearChoices(){ $('choices').innerHTML=''; }
+
+function renderNode(instant){
+  clearChoices();
+  showLine(state.li, instant);
+}
+
+function lineHTML(line){
+  var who=line[0], txt=(S.lang==='ru')?line[1]:line[2];
+  return { who:who, txt:txt };
+}
+
+function showLine(idx, instant){
+  var n=N[state.node]; if(!n) return;
+  var L=n.lines[idx]; if(!L){ lineDone(); return; }
+  if(typeTimer){ clearInterval(typeTimer); typeTimer=null; }
+  typing=false;
+  state.li=idx;
+  var h=lineHTML(L), sp=$('speaker'), tx=$('text'), dl=$('dialog');
+  sp.textContent = T('speakers')[h.who]||'';
+  sp.className = h.who==='echo' ? 'who-echo' : '';
+  tx.className = h.who==='echo' ? 'echo-line' : '';
+  dl.className = h.who==='echo' ? 'echo' : '';
+  $('next-hint').style.display='none';
+  clearChoices();
+  VOICE.speak(h.txt);
+  if(h.who==='echo') AUDIO.whisper();
+  if(h.who==='narr' && idx===0 && n.ending) AUDIO.staticBurst(0.12);
+
+  if(instant || S.speed==='instant'){
+    tx.textContent=h.txt; typing=false; lineDone(); return;
+  }
+  var speeds={slow:45, normal:26, fast:12};
+  var ms=speeds[S.speed]!==undefined?speeds[S.speed]:26;
+  typing=true; tx.textContent='';
+  var i=0;
+  typeTimer=setInterval(function(){
+    i++;
+    tx.textContent=h.txt.slice(0,i);
+    if(i%3===0) AUDIO.tick();
+    if(i>=h.txt.length){
+      clearInterval(typeTimer); typeTimer=null; typing=false; lineDone();
+    }
+  }, ms);
+}
+
+function lineDone(){
+  var n=N[state.node]; if(!n) return;
+  if(state.li < n.lines.length-1){ $('next-hint').style.display='block'; return; }
+  if(n.auto){
+    if(!autoFired){
+      autoFired=true;
+      autoTimer=setTimeout(function(){ go(n.auto); }, 800);
+    }
+    return;
+  }
+  if(n.ending){
+    var b=document.createElement('button');
+    b.className='choice';
+    b.innerHTML='<span class="key">&#9654;</span>'+T('btnNext');
+    b.onclick=function(e){ e.stopPropagation(); AUDIO.select(); showEnding(n.ending); };
+    $('choices').appendChild(b);
+    return;
+  }
+  renderChoices();
+}
+
+function advance(){
+  if(!state.node || anyOverlayOpen()) return;
+  if(typing){
+    if(typeTimer){ clearInterval(typeTimer); typeTimer=null; }
+    typing=false;
+    var n=N[state.node], L=n.lines[state.li], h=lineHTML(L);
+    $('text').textContent=h.txt;
+    lineDone();
+    return;
+  }
+  var nn=N[state.node];
+  if(state.li < nn.lines.length-1){ AUDIO.tick(); showLine(state.li+1,false); }
+}
+
+/* ---------- выборы ---------- */
+function visibleChoices(){
+  var n=N[state.node]; if(!n||!n.choices) return [];
+  return n.choices.filter(function(c){ return !c.if || c.if(state); });
+}
+
+function renderChoices(){
+  clearChoices();
+  var list=visibleChoices();
+  list.forEach(function(c,i){
+    var b=document.createElement('button');
+    b.className='choice'+(c.secret?' secret':'');
+    b.innerHTML='<span class="key">'+(i+1)+'</span>'+(S.lang==='ru'?c.ru:c.en);
+    b.onmouseenter=function(){ AUDIO.hover(); };
+    b.onclick=function(e){ e.stopPropagation(); choose(c); };
+    $('choices').appendChild(b);
+  });
+}
+
+function applyEffects(d){
+  if(!d) return false;
+  if(d.trust)  state.stats.trust  = Math.max(0,Math.min(6,state.stats.trust+d.trust));
+  if(d.sanity) state.stats.sanity = Math.max(0,Math.min(6,state.stats.sanity+d.sanity));
+  if(d.power)  state.stats.power  = Math.max(0,Math.min(6,state.stats.power+d.power));
+  if(d.flags) d.flags.forEach(function(f){ state.flags[f]=true; });
+  if(d.clues) d.clues.forEach(function(c){ if(state.clues.indexOf(c)<0) state.clues.push(c); });
+  updateHUD(); saveGame();
+  if(state.stats.sanity<=0 && state.node!=='end_static'){
+    state.flags._madness=true;
+    go('end_static');
+    return true;
+  }
+  return false;
+}
+
+function choose(c){
+  AUDIO.select();
+  if(applyEffects(c.do)) return;
+  var to=(typeof c.to==='function')?c.to(state):c.to;
+  if(to) go(to);
+}
+
+/* ---------- концовки ---------- */
+function unlockedEndings(){ return store.get('echo_endings',[])||[]; }
+
+function showEnding(id){
+  var e=ENDS[id]; if(!e) return;
+  var un=unlockedEndings();
+  if(un.indexOf(id)<0){ un.push(id); store.set('echo_endings',un); }
+  VOICE.stop();
+  AUDIO.endingStinger(e.t);
+  var badge=$('end-badge');
+  badge.className='t-'+e.t;
+  badge.textContent=T('badge')[e.t]||'';
+  $('end-label').textContent=T('endLabel')+' '+(END_ORDER.indexOf(id)+1)+' '+T('of')+' '+END_ORDER.length;
+  $('end-name').textContent=S.lang==='ru'?e.ru:e.en;
+  $('end-desc').textContent=S.lang==='ru'?e.dru:e.den;
+  $('end-progress').textContent=T('unlocked')+': '+un.length+' / '+END_ORDER.length;
+  updateMenuMeta();
+  showScreen('screen-ending');
+}
+
+/* ---------- галерея концовок ---------- */
+function renderGallery(){
+  var g=$('gallery'), un=unlockedEndings();
+  g.innerHTML='';
+  END_ORDER.forEach(function(id){
+    var e=ENDS[id], open=un.indexOf(id)>=0;
+    var d=document.createElement('div');
+    d.className='gcard'+(open?'':' locked');
+    var t=document.createElement('div'); t.className='gt';
+    t.textContent=open?(S.lang==='ru'?e.ru:e.en):'???';
+    var dd=document.createElement('div'); dd.className='gd';
+    dd.textContent=open?(S.lang==='ru'?e.dru:e.den):'';
+    d.appendChild(t); d.appendChild(dd);
+    g.appendChild(d);
+  });
+}
+
+/* ---------- локализация ---------- */
+function applyLang(){
+  document.documentElement.lang = S.lang;
+  var els=document.querySelectorAll('[data-i]');
+  for(var i=0;i<els.length;i++){
+    var k=els[i].getAttribute('data-i');
+    els[i].textContent=T(k);
+  }
+  var title=$('menu-title');
+  title.textContent=T('title'); title.setAttribute('data-text',T('title'));
+  var opts=$('set-speed').options;
+  opts[0].textContent=T('s_slow'); opts[1].textContent=T('s_normal');
+  opts[2].textContent=T('s_fast'); opts[3].textContent=T('s_inst');
+  var vg=$('set-vgender').options;
+  vg[0].textContent=T('s_vf'); vg[1].textContent=T('s_vm');
+  FS.sync();
+  updateMenuMeta(); updateHUD();
+  if($('screen-game').classList.contains('active') && state.node){
+    renderNode(true);
+  }
+}
+
+function updateMenuMeta(){
+  $('menu-ver').textContent=T('ver');
+  $('menu-endcount').textContent=T('unlocked')+': '+unlockedEndings().length+' / '+END_ORDER.length;
+  $('btn-continue').hidden=!hasSave();
+}
+
+/* ---------- настройки ---------- */
+function syncSettings(){
+  $('set-lang').value=S.lang;
+  $('set-master').value=Math.round(S.master*100);
+  $('set-music').value=Math.round(S.music*100);
+  $('set-sfx').value=Math.round(S.sfx*100);
+  $('set-voice').checked=!!S.voice;
+  $('set-vgender').value=(S.vgender==='m')?'m':'f';
+  $('set-rate').value=Math.round(S.rate*100);
+  $('set-speed').value=S.speed;
+  $('set-fx').checked=!!S.fx;
+  document.body.classList.toggle('no-fx',!S.fx);
+}
+
+function bindSettings(){
+  $('set-lang').onchange=function(){ S.lang=this.value; saveS(); AUDIO.click(); applyLang(); };
+  $('set-master').oninput=function(){ S.master=this.value/100; saveS(); AUDIO.applyVolumes(); };
+  $('set-music').oninput=function(){ S.music=this.value/100; saveS(); AUDIO.applyVolumes(); AUDIO.tone(220,0.2,'sine',0.2,AUDIO.music); };
+  $('set-sfx').oninput=function(){ S.sfx=this.value/100; saveS(); AUDIO.applyVolumes(); AUDIO.tone(660,0.12,'sine',0.25); };
+  $('set-voice').onchange=function(){ S.voice=this.checked; saveS(); if(!S.voice) VOICE.stop(); };
+  $('set-vgender').onchange=function(){ S.vgender=this.value; saveS(); AUDIO.click(); };
+  $('btn-fs').onclick=function(){ AUDIO.click(); if(!FS.active()){ FS.enter(); closeAllOv(); } };
+  $('set-rate').oninput=function(){ S.rate=this.value/100; saveS(); };
+  $('set-speed').onchange=function(){ S.speed=this.value; saveS(); AUDIO.click(); };
+  $('set-fx').onchange=function(){ S.fx=this.checked; saveS(); document.body.classList.toggle('no-fx',!S.fx); };
+  $('btn-set-reset').onclick=function(){
+    S=Object.assign({},DEFAULTS); saveS(); syncSettings(); applyLang(); AUDIO.applyVolumes(); AUDIO.click();
+  };
+}
+
+/* ---------- запуск / продолжение ---------- */
+function doNew(){
+  VOICE.stop();
+  state={ node:null, li:0, stats:{trust:3,sanity:4,power:4}, flags:{}, clues:[], chapter:0 };
+  closeAllOv();
+  showScreen('screen-game');
+  go('start');
+}
+function doContinue(){
+  var s=store.get('echo_save',null);
+  if(!s||!N[s.node]){ updateMenuMeta(); return; }
+  VOICE.stop();
+  state={ node:s.node, li:0, stats:s.stats, flags:s.flags||{}, clues:s.clues||[], chapter:s.chapter||0 };
+  closeAllOv();
+  showScreen('screen-game');
+  go(s.node);
+}
+function closeAllOv(){
+  var o=document.querySelectorAll('.overlay.active');
+  for(var i=0;i<o.length;i++) o[i].classList.remove('active');
+}
+
+/* ---------- снег ---------- */
+function startSnow(){
+  var cv=$('snow'), ctx=cv.getContext('2d'), flakes=[], W,H;
+  function size(){ W=cv.width=window.innerWidth; H=cv.height=window.innerHeight; }
+  window.addEventListener('resize',size); size();
+  for(var i=0;i<110;i++){
+    flakes.push({ x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.8+0.4,
+      s:Math.random()*0.5+0.15, d:Math.random()*0.6-0.3 });
+  }
+  (function loop(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='rgba(200,230,255,.55)';
+    for(var i=0;i<flakes.length;i++){
+      var f=flakes[i];
+      f.y+=f.s; f.x+=f.d+Math.sin(f.y/60)*0.2;
+      if(f.y>H+4){ f.y=-4; f.x=Math.random()*W; }
+      if(f.x>W+4) f.x=-4; if(f.x<-4) f.x=W+4;
+      ctx.globalAlpha=0.25+f.r*0.3;
+      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.283); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* ---------- полноэкранный режим ----------
+   Включается кнопкой в настройках. Выключается только крестиком,
+   закрытием окна настроек или ESC (стандарт браузера). */
+var FS = {
+  supported:function(){
+    var el=document.documentElement;
+    return !!(el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen);
+  },
+  active:function(){
+    return !!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement);
+  },
+  enter:function(){
+    var el=document.documentElement;
+    var f=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+    if(!f) return;
+    try{ var p=f.call(el); if(p&&p.catch)p.catch(function(){}); }catch(e){}
+  },
+  exit:function(){
+    var f=document.exitFullscreen||document.webkitExitFullscreen||document.mozCancelFullScreen||document.msExitFullscreen;
+    if(!f) return;
+    try{ var p=f.call(document); if(p&&p.catch)p.catch(function(){}); }catch(e){}
+  },
+  sync:function(){
+    var on=this.active(), b=$('btn-fs');
+    if(b){ b.disabled=on; b.textContent = on ? T('s_fs_on') : T('s_fs_do'); }
+    var x=$('fs-exit');
+    if(x) x.classList.toggle('show',on);
+  }
+};
+document.addEventListener('fullscreenchange',function(){ FS.sync(); });
+document.addEventListener('webkitfullscreenchange',function(){ FS.sync(); });
+
+/* ---------- привязка UI ---------- */
+function bindUI(){
+  $('btn-new').onclick=function(){ AUDIO.click(); if(hasSave()){ $('confirm-text').textContent=T('confirmNew'); openOv('overlay-confirm'); } else doNew(); };
+  $('btn-continue').onclick=function(){ AUDIO.click(); doContinue(); };
+  $('btn-endings').onclick=function(){ AUDIO.click(); renderGallery(); openOv('overlay-endings'); };
+  $('btn-settings').onclick=function(){ AUDIO.click(); syncSettings(); openOv('overlay-settings'); };
+  $('btn-yes').onclick=function(){ AUDIO.click(); doNew(); };
+  $('btn-no').onclick=function(){ AUDIO.click(); closeOv('overlay-confirm'); };
+
+  /* закрыть настройки — если включён полноэкранный, он тоже выключается */
+  var closeSet=function(){ AUDIO.click(); closeOv('overlay-settings'); if(FS.active()) FS.exit(); };
+  $('btn-set-close').onclick=closeSet;
+  $('ov-x-settings').onclick=closeSet;
+  $('fs-exit').onclick=function(e){ e.stopPropagation(); AUDIO.click(); FS.exit(); };
+  $('btn-gal-close').onclick=function(){ AUDIO.click(); closeOv('overlay-endings'); };
+
+  $('btn-pause').onclick=function(e){ e.stopPropagation(); AUDIO.click(); VOICE.stop(); openOv('overlay-pause'); };
+  $('btn-resume').onclick=function(){ AUDIO.click(); closeOv('overlay-pause'); };
+  $('btn-pause-settings').onclick=function(){ AUDIO.click(); closeOv('overlay-pause'); syncSettings(); openOv('overlay-settings'); };
+  $('btn-pause-exit').onclick=function(){ AUDIO.click(); closeAllOv(); showScreen('screen-menu'); updateMenuMeta(); };
+
+  $('btn-end-menu').onclick=function(){ AUDIO.click(); showScreen('screen-menu'); updateMenuMeta(); };
+  $('btn-end-again').onclick=function(){ AUDIO.click(); doNew(); };
+  $('btn-end-gallery').onclick=function(){ AUDIO.click(); renderGallery(); openOv('overlay-endings'); };
+
+  $('dialog').onclick=function(){ advance(); };
+
+  /* звук при наведении на кнопки меню */
+  document.addEventListener('mouseover',function(e){
+    var t=e.target;
+    if(t && t.classList && (t.classList.contains('mbtn')) && !t._hovered){
+      t._hovered=true; AUDIO.hover();
+      setTimeout(function(){ t._hovered=false; },300);
+    }
+  });
+
+  /* первый жест пользователя — запуск аудио */
+  var kick=function(){ AUDIO.init(); document.removeEventListener('pointerdown',kick); document.removeEventListener('keydown',kick); };
+  document.addEventListener('pointerdown',kick);
+  document.addEventListener('keydown',kick);
+
+  /* клавиатура */
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      if($('screen-game').classList.contains('active')){
+        if(anyOverlayOpen()) closeAllOv(); else { VOICE.stop(); openOv('overlay-pause'); }
+      }
+      return;
+    }
+    if(!$('screen-game').classList.contains('active')||anyOverlayOpen()) return;
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); advance(); return; }
+    var num=parseInt(e.key,10);
+    if(num>=1&&num<=9){
+      var list=visibleChoices();
+      if(list[num-1]){ AUDIO.click(); choose(list[num-1]); }
+    }
+  });
+}
+
+/* ---------- СТАРТ ---------- */
+function init(){
+  if(!FS.supported()) $('row-fs').style.display='none';
+  syncSettings();
+  bindSettings();
+  bindUI();
+  applyLang();
+  updateMenuMeta();
+  startSnow();
+  showScreen('screen-menu');
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+else init();
+
+})();
+</script>
+</body>
+</html>
